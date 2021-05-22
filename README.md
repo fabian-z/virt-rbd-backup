@@ -4,6 +4,8 @@ Automatic backup of RBD images accessed by virtual machines run by QEMU and mana
 
 Uses libvirt Python API and Ceph librbd RBD Python API to list relevant virtual machines, create a RBD snapshot and save the snapshot to defined output.
 
+Developed and tested with Python v3.9.
+
 # Project scope
 
 - Dynamic list of relevant libvirt virtual machines
@@ -23,6 +25,12 @@ Uses libvirt Python API and Ceph librbd RBD Python API to list relevant virtual 
 [libvirt Python development guide](https://libvirt.org/docs/libvirt-appdev-guide-python/en-US/html/)
 
 [RBD Python API reference](https://docs.ceph.com/en/latest/rbd/api/librbdpy/)
+
+# Dependencies
+
+Both libvirt and rbd / rados Python packages should be installed with the packages providing your libvirt / Ceph distribution in order to achieve compatibility with the running virtualization and storage cluster.
+
+It is currently assumed that the basic cluster configuration (at least mon_host and fsid) is setup in the default Ceph config file /etc/ceph/ceph.conf.
 
 # Contributions
 
