@@ -1,44 +1,115 @@
+from dataclasses import dataclass
+import base64
+
 import rados
 import rbd
 
-#TODO change to try / finally or context managers, refactor to classes
+class CephConnectionException(Exception):
+    pass
 
-cluster = rados.Rados(conffile='/etc/ceph/ceph.conf',
-                      rados_id="libvirt", conf=dict(key="base64key"))
-print("\nlibrados version: {}".format(str(cluster.version())))
-print("Will attempt to connect to: {}".format(
-    str(cluster.conf_get('mon host'))))
+@dataclass
+class CephConnection:
+    """ Helper class to abstract API state for RADOS and RBD, with only a single cluster / pool / image
+    opened at the same time. Improves structuring and reasoning about edge cases / closing handles"""
+    rados_id: str # will be admin if None
+    key: bytes # will be base64 encoded
 
-cluster.connect()
-print("\nCluster ID: {}".format(cluster.get_fsid()))
+    config: str = "/etc/ceph/ceph.conf"
+    cluster: rados.Rados = None
+    ioctx: rados.Ioctx = None
+    image: rbd.Image = None
 
-print("\n\nCluster Statistics")
-print("==================")
-cluster_stats = cluster.get_cluster_stats()
+    def __post_init__(self):
+        enc_key = base64.b64encode(self.key).decode('utf-8')
+        self.cluster = rados.Rados(conffile=self.config, rados_id=self.rados_id,
+            conf=dict(key=enc_key))
 
-for key, value in cluster_stats.items():
-    print(key, value)
+    def close_image(self):
+        if self.image != None:
+            self.image.close()
+            self.image = None
+    
+    def close_pool(self):
+        if self.ioctx != None:
+            self.ioctx.close()
+            self.ioctx = None
+    
+    def close_cluster(self):
+        #TODO check if cluster should be reused?
+        if self.cluster != None:
+            self.cluster.shutdown()
+            self.cluster = None
 
-print("\n\nPool Operations")
-print("===============")
+    def close(self):
+        self.close_image()
+        self.close_pool()
+        self.close_cluster()
 
-print("\nPool named 'libvirt-pool' exists: {}".format(
-    str(cluster.pool_exists('libvirt-pool'))))
-print("\nVerify 'libvirt-pool' Pool Exists")
-print("-------------------------")
-pools = cluster.list_pools()
+    def connect(self):
+        print("Connecting to Ceph monitors: {}".format(str(self.cluster.conf_get('mon host'))))
+        self.cluster.connect()
+        self.cluster.require_state("connected")
+        print("Connected to Ceph Cluster ID: {}".format(self.cluster.get_fsid()))
 
-for pool in pools:
-    print(pool)
+    # Helper functions to establish state
+    def require_cluster_connection(self):
+        if self.cluster == None:
+            raise CephConnectionException("not connected to cluster")
 
-ioctx = cluster.open_ioctx('libvirt-pool')
-image = rbd.Image(ioctx, 'myimage')
-image.create_snap("myimage-snapshotname")
-image.protect_snap("myimage-snapshotname")
+    def require_pool_opened(self):
+        self.require_cluster_connection()
+        if self.ioctx == None:
+            raise CephConnectionException("no pool opened")
 
-#TODO copy snapshot to backup output module, remove snapshot afterwards
+    def require_image_opened(self):
+        self.require_pool_opened()
+        if self.image == None:
+            raise CephConnectionException("no image opened")
 
-# Does not actually shutdown the cluster, only disconnects RADOS client
-image.close()
-ioctx.close()
-cluster.shutdown()
+    def print_stats(self):
+        self.require_cluster_connection()
+        print("Ceph Statistics:")
+        stats = self.cluster.get_cluster_stats()
+        for key, value in stats.items():
+          print(key, value)
+
+    def print_pools(self):
+        self.require_cluster_connection()
+        pools = self.cluster.list_pools()
+        for pool in pools:
+          print(pool)
+
+    def pool_exists(self, pool_name):
+        self.require_cluster_connection()
+        return self.cluster.pool_exists(pool_name)
+
+    def open_pool(self, pool_name):
+        self.require_cluster_connection()
+        self.ioctx = self.cluster.open_ioctx(pool_name)
+    
+    def open_image(self, image_name, snapshot=None, read_only=False):
+        self.require_pool_opened()
+        self.image = rbd.Image(self.ioctx, name=image_name, snapshot=snapshot, read_only=read_only)
+
+    def create_snapshot(self, snapshot_name, protected=False):
+        self.require_image_opened()
+        self.image.create_snap(snapshot_name)
+        if protected:
+            self.image.protect_snap(snapshot_name)
+
+    def remove_snapshot(self, snapshot_name, force_protected=False):
+        self.require_image_opened()
+        if self.image.is_protected_snap(snapshot_name) and force_protected:
+            self.image.unprotect_snap(snapshot_name)
+        self.image.remove_snap(snapshot_name)
+
+#TODO copy snapshot to backup output module (callback?)
+conn = CephConnection("libvirt", b"key")
+try:
+    conn.connect()
+    conn.pool_exists("libvirt-pool")
+    conn.open_pool("libvirt-pool")
+    conn.open_image("testimage")
+    conn.create_snapshot("testsnap")
+finally:
+    conn.close()
