@@ -94,6 +94,6 @@ def list_virtrbd_images(connection):
             rbd_secret = libvirt_secret.value()
 
             images_list.append(
-                VirtRBDImage(dom, pool, image, rbd_username, rbd_secret))
+                VirtRBDImage(dom, image, pool, rbd_username, rbd_secret))
 
     return images_list
