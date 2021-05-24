@@ -4,15 +4,17 @@ import base64
 import rados
 import rbd
 
+
 class CephConnectionException(Exception):
     pass
+
 
 @dataclass
 class CephConnection:
     """ Helper class to abstract API state for RADOS and RBD, with only a single cluster / pool / image
     opened at the same time. Improves structuring and reasoning about edge cases / closing handles"""
-    rados_id: str # will be admin if None
-    key: bytes # will be base64 encoded
+    rados_id: str  # will be admin if None
+    key: bytes  # will be base64 encoded
 
     config: str = "/etc/ceph/ceph.conf"
     cluster: rados.Rados = None
@@ -22,20 +24,20 @@ class CephConnection:
     def __post_init__(self):
         enc_key = base64.b64encode(self.key).decode('utf-8')
         self.cluster = rados.Rados(conffile=self.config, rados_id=self.rados_id,
-            conf=dict(key=enc_key))
+                                   conf=dict(key=enc_key))
 
     def close_image(self):
         if self.image != None:
             self.image.close()
             self.image = None
-    
+
     def close_pool(self):
         if self.ioctx != None:
             self.ioctx.close()
             self.ioctx = None
-    
+
     def close_cluster(self):
-        #TODO check if cluster should be reused?
+        # TODO check if cluster should be reused?
         if self.cluster != None:
             self.cluster.shutdown()
             self.cluster = None
@@ -46,7 +48,8 @@ class CephConnection:
         self.close_cluster()
 
     def connect(self):
-        print("Connecting to Ceph monitors: {}".format(str(self.cluster.conf_get('mon host'))))
+        print("Connecting to Ceph monitors: {}".format(
+            str(self.cluster.conf_get('mon host'))))
         self.cluster.connect()
         self.cluster.require_state("connected")
         print("Connected to Ceph Cluster ID: {}".format(self.cluster.get_fsid()))
@@ -71,13 +74,13 @@ class CephConnection:
         print("Ceph Statistics:")
         stats = self.cluster.get_cluster_stats()
         for key, value in stats.items():
-          print(key, value)
+            print(key, value)
 
     def print_pools(self):
         self.require_cluster_connection()
         pools = self.cluster.list_pools()
         for pool in pools:
-          print(pool)
+            print(pool)
 
     def pool_exists(self, pool_name):
         self.require_cluster_connection()
@@ -86,10 +89,11 @@ class CephConnection:
     def open_pool(self, pool_name):
         self.require_cluster_connection()
         self.ioctx = self.cluster.open_ioctx(pool_name)
-    
+
     def open_image(self, image_name, snapshot=None, read_only=False):
         self.require_pool_opened()
-        self.image = rbd.Image(self.ioctx, name=image_name, snapshot=snapshot, read_only=read_only)
+        self.image = rbd.Image(self.ioctx, name=image_name,
+                               snapshot=snapshot, read_only=read_only)
 
     def create_snapshot(self, snapshot_name, protected=False):
         self.require_image_opened()
@@ -102,14 +106,3 @@ class CephConnection:
         if self.image.is_protected_snap(snapshot_name) and force_protected:
             self.image.unprotect_snap(snapshot_name)
         self.image.remove_snap(snapshot_name)
-
-#TODO copy snapshot to backup output module (callback?)
-conn = CephConnection("libvirt", b"key")
-try:
-    conn.connect()
-    conn.pool_exists("libvirt-pool")
-    conn.open_pool("libvirt-pool")
-    conn.open_image("testimage")
-    conn.create_snapshot("testsnap")
-finally:
-    conn.close()

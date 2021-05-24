@@ -9,8 +9,10 @@ from dataclasses import dataclass
 
 import libvirt
 
-class ConnectionException(Exception):
+
+class LibvirtConnectionException(Exception):
     pass
+
 
 @dataclass
 class VirtRBDImage:
@@ -20,6 +22,7 @@ class VirtRBDImage:
     pool: str
     username: str
     secret: bytes
+
 
 @dataclass
 class VirtConnection:
@@ -44,8 +47,9 @@ class VirtConnection:
         of libvirt.virConnect"""
         print(attr)
         if self.conn == None:
-            raise ConnectionException("invalid connection")
+            raise LibvirtConnectionException("invalid connection")
         return getattr(self.conn, attr)
+
 
 def list_virtrbd_images(connection):
 
@@ -60,14 +64,13 @@ def list_virtrbd_images(connection):
         disks = tree.findall('devices/disk')
 
         for disk in disks:
-            #print('disk: type='+disk.getAttribute('type')+' device='+disk.getAttribute('device'))
             disk_type = disk.get("type")
-            # print(disk_type)
+
             if disk_type != "network":
                 print("Ignoring non-network disk for domain: "+dom.name())
                 continue
 
-            #ElementTree.dump(disk)
+            # ElementTree.dump(disk)
 
             # Get disk details
             source = disk.find("source")
@@ -80,9 +83,6 @@ def list_virtrbd_images(connection):
             name = source.get("name")
             [pool, image] = name.split("/")
 
-            #print(pool, image)
-            #print(protocol, name)
-
             # Get auth information
             auth = disk.find("auth")
             rbd_username = auth.get("username")
@@ -90,16 +90,10 @@ def list_virtrbd_images(connection):
             secret = auth.find("secret")
             secret_uuid = secret.get("uuid")
 
-            #print(rbd_username, secret_uuid)
             libvirt_secret = connection.secretLookupByUUIDString(secret_uuid)
             rbd_secret = libvirt_secret.value()
-
-            #print(rbd_username, rbd_secret)
 
             images_list.append(
                 VirtRBDImage(dom, pool, image, rbd_username, rbd_secret))
 
     return images_list
-
-
-
