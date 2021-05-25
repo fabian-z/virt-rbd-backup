@@ -21,7 +21,11 @@ class CephConnection:
     ioctx: rados.Ioctx = None
     image: rbd.Image = None
 
-    def __post_init__(self):
+    def __init__(self, rados_id: str, key: bytes, config: str = "/etc/ceph/ceph.conf"):
+        self.rados_id = rados_id
+        self.key = key
+        self.config = config
+
         enc_key = base64.b64encode(self.key).decode('utf-8')
         self.cluster = rados.Rados(conffile=self.config, rados_id=self.rados_id,
                                    conf=dict(key=enc_key))
