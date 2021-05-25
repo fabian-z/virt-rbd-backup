@@ -3,14 +3,14 @@ from datetime import datetime
 import shutil
 
 BACKUP_BASE = "rbd_backup"
-CHUNK_SIZE = 16384 # 16kb chunks
+CHUNK_SIZE = 4194304 # 4MB chunks
 
 class BackupException(Exception):
     pass
 
 def backup(target_repo, src, filename=None, progress=False):
     timestamp = datetime.utcnow().strftime('%Y_%m_%d_%s')
-    target = target_repo+"::"+BACKUP_BASE+"-"+timestamp
+    target = target_repo+"::"+BACKUP_BASE+"-"+timestamp # TODO add image name to backup description
     process = subprocess.Popen(("/usr/bin/borg", "create", "-p", target, "-"),
                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
 
