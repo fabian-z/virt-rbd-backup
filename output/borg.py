@@ -18,18 +18,18 @@ def backup(target_repo, src, filename=None, progress=False):
 
     offset = 0
     write_last = False
-    while:
+    while True:
         if offset + CHUNK_SIZE > size:
             last_chunk = size - offset
             data = src.read(offset, last_chunk)
             write_last = True
-        else
+        else:
             data = src.read(offset, CHUNK_SIZE)
 
         offset += len(data)
         written = process.stdin.write(data)
 
-        if written != len(data)
+        if written != len(data):
             raise BackupException("Short write")
 
         if write_last:
