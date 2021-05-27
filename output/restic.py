@@ -8,14 +8,14 @@ CHUNK_SIZE = 4194304 # 4MB chunks
 class BackupException(Exception):
     pass
 
-def backup(target_repo, src, filename=None, progress=False):
+def backup(target_repo, src, filename="stdin", progress=False):
     timestamp = datetime.utcnow().strftime('%Y_%m_%d_%s')
-    target = target_repo+"::"+BACKUP_BASE+"-"+timestamp # TODO add image name to backup description
-    process = subprocess.Popen(("/usr/bin/borg", "create", "-p", target, "-"),
+    target = filename+"-"+BACKUP_BASE+"-"+timestamp # TODO add image name to backup description
+    process = subprocess.Popen(("/usr/bin/restic", "-r", target_repo, "backup", "--stdin", "--stdin-filename", target),
                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
 
+    # TODO could be refactored to I/O wrapper class
     size = src.size()
-
     offset = 0
     write_last = False
     while True:

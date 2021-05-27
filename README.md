@@ -11,7 +11,7 @@ Developed and tested with Python v3.9.
 - Dynamic list of relevant libvirt virtual machines
 - Create / Process / Delete RBD snapshots
 - Functionality for multiple RBD images per virtual machine
-- Modular output in file or external processes (e.g. borg backup)
+- Modular output in file or external processes (e.g. restic backup)
 - If supported by guest operating system: Pause FS activity during snapshot (via QEMU guest agent)
 
 # Out of scope

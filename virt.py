@@ -17,7 +17,7 @@ class LibvirtConnectionException(Exception):
 @dataclass
 class VirtRBDImage:
     """VirtRBDImage represents an RBD image attached to the libvirt domain specified by domain."""
-    domain: libvirt.virDomain
+    domain: str
     name: str
     pool: str
     username: str
@@ -57,7 +57,6 @@ def list_virtrbd_images(connection):
     domains = connection.listAllDomains(0)
     for dom in domains:
         print("Processing domain: "+dom.name())
-
         # TODO add locking?
         raw_xml = dom.XMLDesc(0)
         tree = ElementTree.fromstring(raw_xml)
@@ -94,6 +93,6 @@ def list_virtrbd_images(connection):
             rbd_secret = libvirt_secret.value()
 
             images_list.append(
-                VirtRBDImage(dom, image, pool, rbd_username, rbd_secret))
+                VirtRBDImage(dom.UUIDString(), image, pool, rbd_username, rbd_secret))
 
     return images_list

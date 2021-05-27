@@ -2,57 +2,112 @@
 import sys
 from datetime import datetime
 
+# Multiprocessing from Python documentationen for module multiprocessing
+# https://docs.python.org/3/library/multiprocessing.html
+import multiprocessing
+
 import virt
 import ceph
-import output.borg as borg
+import output.restic as restic
 
-virt_conn = virt.VirtConnection("qemu:///system")
-virt_conn.open()
+NUMBER_OF_PROCESSES = 4
 
-try:
-    images = virt.list_virtrbd_images(virt_conn)
+# Function run by worker processes
+def worker(input, output):
+    for image in iter(input.get, None):
+        result = process_backup(image)
+        output.put(result)
+
+# List images and start parallel backup operations
+def run_parallel():
+    virt_conn = virt.VirtConnection("qemu:///system")
+    virt_conn.open()
+    images = []
+    try:
+        images = virt.list_virtrbd_images(virt_conn)
+    finally:
+        print("Closing libvirt connection")
+        virt_conn.close()
+
+    # Create queues
+    task_queue = multiprocessing.Queue()
+    done_queue = multiprocessing.Queue()
+
+    # Submit tasks
     for image in images:
-        # freeze = image.domain.isActive()
-        freeze = False
-        frozen = False
-        if freeze:
-            try:
-                image.domain.fsFreeze()
-                frozen = True
-            except Exception as e:
-                print("Error freezing guest FS - continue with hot snapshot:", e)
-                frozen = False
+        # TODO map tasks for same VM to sequentially the same worker
+        task_queue.put(image)
 
-        storage_conn = ceph.CephConnection(image.username, image.secret)
-        try:
-            storage_conn.connect()
-            storage_conn.pool_exists(image.pool)
-            storage_conn.open_pool(image.pool)
-            storage_conn.open_image(image.name)
-            timestamp = datetime.utcnow().strftime('%Y_%m_%d_%s')
-            snapshot_name = image.name+"-backup-"+timestamp
-            storage_conn.create_snapshot(snapshot_name, protected=True)
-            storage_conn.close_image()
-            storage_conn.open_image(
-                image.name, snapshot=snapshot_name, read_only=True)
+    # Start worker processes
+    for i in range(NUMBER_OF_PROCESSES):
+        multiprocessing.Process(target=worker, args=(task_queue, done_queue)).start()
+    
+    # Get and print results
+    print('Unordered results:')
+    for i in range(len(images)):
+        print('\n', done_queue.get())
 
-            borg.backup("testrepo", storage_conn.image,
-                        filename="stdin", progress=True)
+    # Tell child processes to stop
+    for i in range(NUMBER_OF_PROCESSES):
+        task_queue.put(None)
 
-            storage_conn.close_image()
-            storage_conn.open_image(image.name)
-            storage_conn.remove_snapshot(
-                snapshot_name, force_protected=True)
-        except Exception as e:
-            print("Error creating snapshot or backup for image: ", image.name)
-            print("Exception occured: ", e)
-        finally:
-            storage_conn.close()
-            if frozen:
+def process_backup(image):
+    virt_conn = virt.VirtConnection("qemu:///system")
+    virt_conn.open()
+    try:
+            domain = virt_conn.lookupByUUIDString(image.domain)
+            # freeze = image.domain.isActive()
+            freeze = False
+            frozen = False
+            if freeze:
                 try:
-                    image.domain.fsThaw()
+                    domain.fsFreeze()
+                    frozen = True
                 except Exception as e:
-                    print("Error thawing guest FS - guest may be unresponsive:", e)
-finally:
-    print("Closing libvirt connection")
-    virt_conn.close()
+                    print("Error freezing guest FS - continue with hot snapshot: ", repr(e))
+                    frozen = False
+
+            storage_conn = ceph.CephConnection(image.username, image.secret)
+            try:
+                storage_conn.connect()
+                storage_conn.pool_exists(image.pool)
+                storage_conn.open_pool(image.pool)
+                storage_conn.open_image(image.name)
+                timestamp = datetime.utcnow().strftime('%Y_%m_%d_%s')
+                snapshot_name = image.name+"-backup-"+timestamp
+                storage_conn.create_snapshot(snapshot_name, protected=True)
+                storage_conn.close_image()
+                storage_conn.open_image(
+                    image.name, snapshot=snapshot_name, read_only=True)
+
+                ##sftp:user@host:/srv/restic-repo
+                restic.backup("testrepo", storage_conn.image,
+                            filename="stdin", progress=True)
+
+                storage_conn.close_image()
+                storage_conn.open_image(image.name)
+                storage_conn.remove_snapshot(
+                    snapshot_name, force_protected=True)
+            except Exception as e:
+                return (False, "Error creating snapshot or backup for image: " + image.name+"\n. Exception: " + repr(e))
+            finally:
+                storage_conn.close()
+                if frozen:
+                    try:
+                        domain.fsThaw()
+                    except Exception as e:
+                        return (False, "Error thawing guest FS - guest may be unresponsive: " + repr.(e))
+    except Exception as e:
+            virt_conn.close()
+            return (False, "Error during libvirt connection: " + repr(e))
+
+    finally:
+        print("Closing libvirt connection")
+        virt_conn.close()
+
+    return (True, "No error occured")
+
+# Entrypoint definition
+if __name__ == '__main__':
+    multiprocessing.freeze_support()
+    run_parallel()
