@@ -1,6 +1,5 @@
 import subprocess
 from datetime import datetime
-import shutil
 
 BACKUP_BASE = "rbd_backup"
 CHUNK_SIZE = 4194304 # 4MB chunks

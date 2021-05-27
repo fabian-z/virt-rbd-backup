@@ -38,8 +38,9 @@ class VirtConnection:
             sys.exit(1)
 
     def close(self):
-        self.conn.close()
-        self.conn = None
+        if self.conn != None:
+            self.conn.close()
+            self.conn = None
 
     def __getattr__(self, attr):
         """___getattr__ is called when the method or attribute does not exist in this class,
@@ -50,49 +51,47 @@ class VirtConnection:
             raise LibvirtConnectionException("invalid connection")
         return getattr(self.conn, attr)
 
+    def list_virtrbd_images(self):
+        images_list = []
+        domains = self.listAllDomains(0)
+        for dom in domains:
+            print("Processing domain: "+dom.name())
+            # TODO add locking?
+            raw_xml = dom.XMLDesc(0)
+            tree = ElementTree.fromstring(raw_xml)
+            disks = tree.findall('devices/disk')
 
-def list_virtrbd_images(connection):
+            for disk in disks:
+                disk_type = disk.get("type")
 
-    images_list = []
-    domains = connection.listAllDomains(0)
-    for dom in domains:
-        print("Processing domain: "+dom.name())
-        # TODO add locking?
-        raw_xml = dom.XMLDesc(0)
-        tree = ElementTree.fromstring(raw_xml)
-        disks = tree.findall('devices/disk')
+                if disk_type != "network":
+                    print("Ignoring non-network disk for domain: "+dom.name())
+                    continue
 
-        for disk in disks:
-            disk_type = disk.get("type")
+                # ElementTree.dump(disk)
 
-            if disk_type != "network":
-                print("Ignoring non-network disk for domain: "+dom.name())
-                continue
+                # Get disk details
+                source = disk.find("source")
+                protocol = source.get("protocol")
 
-            # ElementTree.dump(disk)
+                if protocol != "rbd":
+                    print("Ignoring non-RBD network disk for domain: "+dom.name())
+                    continue
 
-            # Get disk details
-            source = disk.find("source")
-            protocol = source.get("protocol")
+                name = source.get("name")
+                [pool, image] = name.split("/")
 
-            if protocol != "rbd":
-                print("Ignoring non-RBD network disk for domain: "+dom.name())
-                continue
+                # Get auth information
+                auth = disk.find("auth")
+                rbd_username = auth.get("username")
 
-            name = source.get("name")
-            [pool, image] = name.split("/")
+                secret = auth.find("secret")
+                secret_uuid = secret.get("uuid")
 
-            # Get auth information
-            auth = disk.find("auth")
-            rbd_username = auth.get("username")
+                libvirt_secret = self.secretLookupByUUIDString(secret_uuid)
+                rbd_secret = libvirt_secret.value()
 
-            secret = auth.find("secret")
-            secret_uuid = secret.get("uuid")
+                images_list.append(
+                    VirtRBDImage(dom.UUIDString(), image, pool, rbd_username, rbd_secret))
 
-            libvirt_secret = connection.secretLookupByUUIDString(secret_uuid)
-            rbd_secret = libvirt_secret.value()
-
-            images_list.append(
-                VirtRBDImage(dom.UUIDString(), image, pool, rbd_username, rbd_secret))
-
-    return images_list
+        return images_list
