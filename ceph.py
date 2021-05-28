@@ -61,17 +61,17 @@ class CephConnection:
     # Helper functions to establish state
     def require_cluster_connection(self):
         if self.cluster == None:
-            raise CephConnectionException("not connected to cluster")
+            raise CephConnectionException("Not connected to cluster")
 
     def require_pool_opened(self):
         self.require_cluster_connection()
         if self.ioctx == None:
-            raise CephConnectionException("no pool opened")
+            raise CephConnectionException("No pool opened")
 
     def require_image_opened(self):
         self.require_pool_opened()
         if self.image == None:
-            raise CephConnectionException("no image opened")
+            raise CephConnectionException("No image opened")
 
     def print_stats(self):
         self.require_cluster_connection()

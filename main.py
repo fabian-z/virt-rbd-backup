@@ -99,7 +99,7 @@ def process_backup(image):
                 snapshot_name, force_protected=True)
         except Exception as e:
             exceptions.append(
-                (False, "Error creating snapshot or backup for image: " + image.name+"\n. Exception: " + repr(e)))
+                (False, "Error creating snapshot or backup for image: " + image.name+". Exception: " + repr(e)))
             raise
         finally:
             storage_conn.close()

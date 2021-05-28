@@ -25,6 +25,7 @@ def backup(target_repo, src, filename="stdin", progress=False):
         else:
             data = src.read(offset, CHUNK_SIZE)
 
+        # Calculating offset with read length handles short reads
         offset += len(data)
         written = process.stdin.write(data)
 
@@ -38,6 +39,6 @@ def backup(target_repo, src, filename="stdin", progress=False):
 
     return_code = process.wait()
     if return_code != 0:
-        print("Backup error, see log")
+        raise BackupException("Backup error, see log")
     else:
         print("Backup successful")
