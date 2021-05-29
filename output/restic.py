@@ -40,7 +40,7 @@ def backup(target_repo, keyfile, src, filename="stdin", progress=False):
 
     process.stdin.close()
     return_code = process.wait()
-    
+
     if return_code != 0:
-        raise BackupException(f"Backup error for repository {target_repo}, image {filename} - see log")
-    
+        raise BackupException(
+            f"Backup error for repository {target_repo}, image {filename} - see log")

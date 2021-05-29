@@ -22,6 +22,7 @@ class VirtRBDImage:
     pool: str
     username: str
     secret: bytes
+    snapshot_name: str
 
 
 @dataclass
