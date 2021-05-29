@@ -104,6 +104,7 @@ def process_backup(domainImages):
 
             # Second pass: Copy snapshot content to backup module
             for image in domainImages:
+                storage_conn.open_pool(image.pool)
                 storage_conn.open_image(
                     image.name, snapshot=image.snapshot_name, read_only=True)
 
@@ -115,6 +116,7 @@ def process_backup(domainImages):
                 storage_conn.remove_snapshot(
                     image.snapshot_name, force_protected=True)
                 storage_conn.close_image()
+                storage_conn.close_pool()
 
         except Exception as e:
             exceptions.append(
