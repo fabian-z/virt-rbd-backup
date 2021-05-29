@@ -1,20 +1,19 @@
 import subprocess
 
-BACKUP_BASE = "rbd_backup"
 CHUNK_SIZE = 4194304  # 4MB chunks
-# target_repo can be local dir, or 
+# target_repo can be local dir, or
 # e.g. sftp:user@host:/path/to/repo/
-PW_LOCATION = "/path/to/pwfile"
+
 
 class BackupException(Exception):
     pass
 
 
-def backup(target_repo, src, filename="stdin", progress=False):
+def backup(target_repo, keyfile, src, filename="stdin", progress=False):
     # TODO add tagging?
     # Omit timestamp since restic backend does timestamp with snapshots
     # Consistent filenames should improve deduplication
-    process = subprocess.Popen(("/usr/bin/restic", "-p", PW_LOCATION, "-r", target_repo, "backup", "--stdin", "--stdin-filename", filename),
+    process = subprocess.Popen(("restic", "-p", keyfile, "-r", target_repo, "backup", "--stdin", "--stdin-filename", filename),
                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
 
     # TODO could be refactored to I/O wrapper class

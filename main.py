@@ -12,6 +12,10 @@ import output.restic as restic
 
 NUMBER_OF_PROCESSES = 4
 
+# TODO configuration with multiple backends?
+TARGET_REPO = "/path/to/repository"
+TARGET_KEYFILE = "/path/to/keyfile"
+
 # Function run by worker processes
 
 
@@ -89,9 +93,8 @@ def process_backup(image):
             storage_conn.open_image(
                 image.name, snapshot=snapshot_name, read_only=True)
 
-            # sftp:user@host:/srv/restic-repo
-            restic.backup("testrepo", storage_conn.image,
-                          filename="stdin", progress=True)
+            restic.backup(TARGET_REPO, TARGET_KEYFILE, storage_conn.image,
+                          filename=image.name, progress=True)
 
             storage_conn.close_image()
             storage_conn.open_image(image.name)
