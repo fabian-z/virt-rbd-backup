@@ -32,6 +32,15 @@ Both libvirt and rbd / rados Python packages should be installed with the packag
 
 It is currently assumed that the basic cluster configuration (at least mon_host and fsid) is setup in the default Ceph config file /etc/ceph/ceph.conf.
 
+The (currently only) output module ```restic``` expects the restic executable in the search path.
+
+# Usage
+
+Clone the repository, rename ```config.py.example```to ```config.py``` and adjust the values to your needs.
+Execute main.py for automated backups.
+Currently, only restic output module is supported and the configured output repository must already be initialized.
+The repository password is expected as a keyfile.
+
 # Contributions
 
 Contributions welcome - feel free to fork, experiment and open an issue and / or pull request.
