@@ -36,19 +36,19 @@ class CephConnection:
 
     def close_image(self):
         """Close image if opened"""
-        if self.image != None:
+        if self.image is not None:
             self.image.close()
             self.image = None
 
     def close_pool(self):
         """Close pool if opened"""
-        if self.ioctx != None:
+        if self.ioctx is not None:
             self.ioctx.close()
             self.ioctx = None
 
     def close_cluster(self):
         """Close cluster connection if opened"""
-        if self.cluster != None:
+        if self.cluster is not None:
             self.cluster.shutdown()
             self.cluster = None
 
@@ -69,19 +69,19 @@ class CephConnection:
     # Helper functions to establish state
     def require_cluster_connection(self):
         """Functional helper to require existance of a cluster connection in other methods"""
-        if self.cluster == None:
+        if self.cluster is None:
             raise CephConnectionException("Not connected to cluster")
 
     def require_pool_opened(self):
         """Functional helper to require existance of a pool ioctx in other methods"""
         self.require_cluster_connection()
-        if self.ioctx == None:
+        if self.ioctx is None:
             raise CephConnectionException("No pool opened")
 
     def require_image_opened(self):
         """Functional helper to require an open image in other methods"""
         self.require_pool_opened()
-        if self.image == None:
+        if self.image is None:
             raise CephConnectionException("No image opened")
 
     def print_stats(self):

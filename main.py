@@ -69,16 +69,16 @@ def run_parallel():
         task_queue.put(None)
 
 
-def process_backup(domainImages):
+def process_backup(domain_images):
     """Process the backup of a set of domain images.
     Handles orchestration of other modules.
-    Assumptions: Images belong to a single domain and have identical authentication to the Ceph cluster
-    It is not required for images to be in the same pool"""
+    Assumptions: Images belong to a single domain and have identical authentication to the
+    Ceph cluster. It is not required for images to be in the same pool"""
     exceptions = []
     virt_conn = virt.VirtConnection(LIBVIRT_CONNECTION)
     try:
         virt_conn.open()
-        domain = virt_conn.lookupByUUIDString(domainImages[0].domain)
+        domain = virt_conn.lookupByUUIDString(domain_images[0].domain)
         # freeze = image.domain.isActive()
         freeze = False
         frozen = False
@@ -92,11 +92,11 @@ def process_backup(domainImages):
 
         try:
             storage_conn = ceph.CephConnection(
-                domainImages[0].username, domainImages[0].secret)
+                domain_images[0].username, domain_images[0].secret)
             storage_conn.connect()
 
             # First pass: Create backup snapshosts
-            for image in domainImages:
+            for image in domain_images:
                 storage_conn.pool_exists(image.pool)
                 storage_conn.open_pool(image.pool)
                 storage_conn.open_image(image.name)
@@ -108,7 +108,7 @@ def process_backup(domainImages):
                 storage_conn.close_pool()
 
             # Second pass: Copy snapshot content to backup module
-            for image in domainImages:
+            for image in domain_images:
                 storage_conn.open_pool(image.pool)
                 storage_conn.open_image(
                     image.name, snapshot=image.snapshot_name, read_only=True)
@@ -125,7 +125,8 @@ def process_backup(domainImages):
 
         except Exception as ex:
             exceptions.append(
-                (False, f"Error creating snapshot or backup for domain: {domainImages[0].domain}. Exception: {repr(ex)}"))
+                (False, "Error creating snapshot or backup for domain:" +
+                 f" {domain_images[0].domain}. Exception: {repr(ex)}"))
             raise
         finally:
             storage_conn.close()
@@ -144,7 +145,7 @@ def process_backup(domainImages):
         virt_conn.close()
 
     if len(exceptions) == 0:
-        return (True, f"No error occured for domain {domainImages[0].domain}")
+        return (True, f"No error occured for domain {domain_images[0].domain}")
 
     # Only give first exception for now
     return exceptions[0]
