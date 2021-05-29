@@ -36,7 +36,7 @@ class VirtConnection:
     def close(self):
         """Close the hypervisor management connection, marking the connection
         as closed using None"""
-        if self.conn != None:
+        if self.conn is not None:
             self.conn.close()
             self.conn = None
 
@@ -44,7 +44,7 @@ class VirtConnection:
         """___getattr__ is called when the method or attribute does not exist in this class,
         redirecting to the embbeded conn. It is used to present VirtConnection as a superset
         of libvirt.virConnect"""
-        if self.conn == None:
+        if self.conn is None:
             raise LibvirtConnectionException("invalid connection")
         return getattr(self.conn, attr)
 
