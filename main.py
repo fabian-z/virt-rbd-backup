@@ -15,9 +15,9 @@ from config import NUMBER_OF_PROCESSES, LIBVIRT_CONNECTION, TARGET_REPO, TARGET_
 
 
 def worker(input, output):
-    for image in iter(input.get, None):
-        print(f"Processing {image.name} for domain {image.domain}")
-        result = process_backup(image)
+    for domainImage in iter(input.get, None):
+        print(f"Processing {len(domainImage)} images for domain {domainImage[0].domain}")
+        result = process_backup(domainImage)
         output.put(result)
 
 # List images and start parallel backup operations
