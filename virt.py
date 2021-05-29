@@ -17,7 +17,7 @@ class LibvirtConnectionException(Exception):
 @dataclass
 class VirtRBDImage:
     """VirtRBDImage represents an RBD image attached to the libvirt domain specified by domain."""
-    domain: str
+    domain: str # Given with UUID string
     name: str
     pool: str
     username: str

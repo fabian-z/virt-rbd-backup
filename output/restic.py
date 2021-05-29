@@ -1,16 +1,20 @@
 import subprocess
-from datetime import datetime
 
 BACKUP_BASE = "rbd_backup"
-CHUNK_SIZE = 4194304 # 4MB chunks
+CHUNK_SIZE = 4194304  # 4MB chunks
+# target_repo can be local dir, or 
+# e.g. sftp:user@host:/path/to/repo/
+PW_LOCATION = "/path/to/pwfile"
 
 class BackupException(Exception):
     pass
 
+
 def backup(target_repo, src, filename="stdin", progress=False):
-    timestamp = datetime.utcnow().strftime('%Y_%m_%d_%s')
-    target = filename+"-"+BACKUP_BASE+"-"+timestamp # TODO add image name to backup description
-    process = subprocess.Popen(("/usr/bin/restic", "-r", target_repo, "backup", "--stdin", "--stdin-filename", target),
+    # TODO add tagging?
+    # Omit timestamp since restic backend does timestamp with snapshots
+    # Consistent filenames should improve deduplication
+    process = subprocess.Popen(("/usr/bin/restic", "-p", PW_LOCATION, "-r", target_repo, "backup", "--stdin", "--stdin-filename", filename),
                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
 
     # TODO could be refactored to I/O wrapper class
@@ -34,7 +38,7 @@ def backup(target_repo, src, filename="stdin", progress=False):
 
         if write_last:
             break
-    
+
     process.stdin.close()
 
     return_code = process.wait()
