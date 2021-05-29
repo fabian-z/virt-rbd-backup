@@ -120,7 +120,7 @@ def process_backup(domainImages):
 
         except Exception as e:
             exceptions.append(
-                (False, "Error creating snapshot or backup for image: " + image.name+". Exception: " + repr(e)))
+                (False, "Error creating snapshot or backup for domain: " + domainImages[0].domain +". Exception: " + repr(e)))
             raise
         finally:
             storage_conn.close()
@@ -139,7 +139,7 @@ def process_backup(domainImages):
         virt_conn.close()
 
     if len(exceptions) == 0:
-        return (True, f"No error occured for image {image.name}")
+        return (True, f"No error occured for image {domainImages[0].domain}")
     else:
         # Only give first exception for now
         return exceptions[0]
