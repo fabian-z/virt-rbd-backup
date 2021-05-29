@@ -55,7 +55,7 @@ class VirtConnection:
         images_list = []
         domains = self.listAllDomains(0)
         for dom in domains:
-            # TODO add locking?
+            # locking not supported by libvirt API..
             raw_xml = dom.XMLDesc(0)
             tree = ElementTree.fromstring(raw_xml)
             disks = tree.findall('devices/disk')

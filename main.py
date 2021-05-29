@@ -16,13 +16,13 @@ import output.restic as restic
 from config import NUMBER_OF_PROCESSES, LIBVIRT_CONNECTION, TARGET_REPO, TARGET_KEYFILE
 
 
-def worker(input, output):
+def worker(input_queue, output_queue):
     """Run by worker processes, executes backup processing for tasks from the queue"""
-    for domainImage in iter(input.get, None):
+    for domain_images in iter(input_queue.get, None):
         print(
-            f"Processing {len(domainImage)} images for domain {domainImage[0].domain}")
-        result = process_backup(domainImage)
-        output.put(result)
+            f"Processing {len(domain_images)} images for domain {domain_images[0].domain}")
+        result = process_backup(domain_images)
+        output_queue.put(result)
 
 # List images and start parallel backup operations
 
@@ -37,21 +37,19 @@ def run_parallel():
     finally:
         virt_conn.close()
 
-    domainImages = {}
+    domain_images = {}
     for image in images:
-        cluster = domainImages.get(image.domain, [])
+        cluster = domain_images.get(image.domain, [])
         cluster.append(image)
-        domainImages[image.domain] = cluster
+        domain_images[image.domain] = cluster
 
     # Create queues
     task_queue = multiprocessing.Queue()
     done_queue = multiprocessing.Queue()
 
     # Submit tasks
-    for domain in domainImages:
-        # TODO map tasks for same VM to sequentially the same worker
-        # and improve multi-image snapshot coherency
-        task_queue.put(domainImages[domain])
+    for domain in domain_images:
+        task_queue.put(domain_images[domain])
 
     # Start worker processes
     for _ in range(NUMBER_OF_PROCESSES):
@@ -88,8 +86,8 @@ def process_backup(domainImages):
             try:
                 domain.fsFreeze()
                 frozen = True
-            except Exception as e:
-                print("Error freezing guest FS - continue with hot snapshot: ", repr(e))
+            except Exception as ex:
+                print("Error freezing guest FS - continue with hot snapshot: ", repr(ex))
                 frozen = False
 
         try:
@@ -125,31 +123,31 @@ def process_backup(domainImages):
                 storage_conn.close_image()
                 storage_conn.close_pool()
 
-        except Exception as e:
+        except Exception as ex:
             exceptions.append(
-                (False, "Error creating snapshot or backup for domain: " + domainImages[0].domain + ". Exception: " + repr(e)))
+                (False, f"Error creating snapshot or backup for domain: {domainImages[0].domain}. Exception: {repr(ex)}"))
             raise
         finally:
             storage_conn.close()
             if frozen:
                 try:
                     domain.fsThaw()
-                except Exception as e:
+                except Exception as ex:
                     exceptions.append(
-                        (False, "Error thawing guest FS - guest may be unresponsive: " + repr(e)))
+                        (False, "Error thawing guest FS - guest may be unresponsive: " + repr(ex)))
                     raise
-    except Exception as e:
+    except Exception as ex:
         exceptions.append(
-            (False, "Error during libvirt connection: " + repr(e)))
+            (False, "Error during libvirt connection: " + repr(ex)))
 
     finally:
         virt_conn.close()
 
     if len(exceptions) == 0:
         return (True, f"No error occured for domain {domainImages[0].domain}")
-    else:
-        # Only give first exception for now
-        return exceptions[0]
+
+    # Only give first exception for now
+    return exceptions[0]
 
 
 # Entrypoint definition

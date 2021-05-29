@@ -13,8 +13,8 @@ class CephConnectionException(Exception):
 
 @dataclass
 class CephConnection:
-    """Helper class to abstract API state for RADOS and RBD, with only a single cluster / pool / image
-    opened at the same time. Improves structuring and reasoning about edge cases / closing handles"""
+    """Helper class to abstract API state for RADOS and RBD, with only a single cluster/pool/image
+    opened at the same time. Improves structuring and reasoning about edge cases/closing handles"""
     rados_id: str  # will be admin if None
     key: bytes  # will be base64 encoded
 
@@ -48,7 +48,6 @@ class CephConnection:
 
     def close_cluster(self):
         """Close cluster connection if opened"""
-        # TODO check if cluster should be reused?
         if self.cluster != None:
             self.cluster.shutdown()
             self.cluster = None
