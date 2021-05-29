@@ -9,16 +9,9 @@ import multiprocessing
 import virt
 import ceph
 import output.restic as restic
-
-NUMBER_OF_PROCESSES = 4
-
-# TODO configuration with multiple backends?
-TARGET_REPO = "/path/to/repository"
-TARGET_KEYFILE = "/path/to/keyfile"
+from config import NUMBER_OF_PROCESSES, TARGET_REPO, TARGET_KEYFILE
 
 # Function run by worker processes
-
-
 def worker(input, output):
     for image in iter(input.get, None):
         print(f"Processing {image.name} for domain {image.domain}")
@@ -26,8 +19,6 @@ def worker(input, output):
         output.put(result)
 
 # List images and start parallel backup operations
-
-
 def run_parallel():
     virt_conn = virt.VirtConnection("qemu:///system")
     virt_conn.open()

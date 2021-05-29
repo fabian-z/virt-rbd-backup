@@ -1,0 +1,9 @@
+# Defines number of parallel backup connections to run
+# Main limiting factors to consider are network and CPU
+# for restic deduplication and compression
+NUMBER_OF_PROCESSES = 4
+
+# TODO configuration with multiple backends?
+# => Restic backend only for now
+TARGET_REPO = "/path/to/repository"
+TARGET_KEYFILE = "/path/to/keyfile"
