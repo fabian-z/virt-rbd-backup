@@ -139,7 +139,7 @@ def process_backup(domainImages):
         virt_conn.close()
 
     if len(exceptions) == 0:
-        return (True, f"No error occured for image {domainImages[0].domain}")
+        return (True, f"No error occured for domain {domainImages[0].domain}")
     else:
         # Only give first exception for now
         return exceptions[0]
