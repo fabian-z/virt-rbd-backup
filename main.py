@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-import sys
+"""Automatic backup of RBD images accessed by virtual machines run by QEMU and managed by libvirt
+Uses libvirt Python API and Ceph librbd RBD Python API to list relevant virtual machines,
+create a RBD snapshot and save the snapshot to defined output modules.
+Configuration is done via config.py (copy from config.py.example)."""
+
 from datetime import datetime
 
 # Multiprocessing from Python documentationen for module multiprocessing
@@ -11,12 +15,12 @@ import ceph
 import output.restic as restic
 from config import NUMBER_OF_PROCESSES, LIBVIRT_CONNECTION, TARGET_REPO, TARGET_KEYFILE
 
-# Function run by worker processes
-
 
 def worker(input, output):
+    """Run by worker processes, executes backup processing for tasks from the queue"""
     for domainImage in iter(input.get, None):
-        print(f"Processing {len(domainImage)} images for domain {domainImage[0].domain}")
+        print(
+            f"Processing {len(domainImage)} images for domain {domainImage[0].domain}")
         result = process_backup(domainImage)
         output.put(result)
 
@@ -24,10 +28,11 @@ def worker(input, output):
 
 
 def run_parallel():
+    """List images and start parallel backup operations with worker pool"""
     virt_conn = virt.VirtConnection(LIBVIRT_CONNECTION)
-    virt_conn.open()
     images = []
     try:
+        virt_conn.open()
         images = virt_conn.list_virtrbd_images()
     finally:
         virt_conn.close()
@@ -67,8 +72,10 @@ def run_parallel():
 
 
 def process_backup(domainImages):
-    # Assumptions: Images belong to a single domain and have identical authentication to the Ceph cluster
-    # It is not required for images to be in the same pool
+    """Process the backup of a set of domain images.
+    Handles orchestration of other modules.
+    Assumptions: Images belong to a single domain and have identical authentication to the Ceph cluster
+    It is not required for images to be in the same pool"""
     exceptions = []
     virt_conn = virt.VirtConnection(LIBVIRT_CONNECTION)
     try:
@@ -120,7 +127,7 @@ def process_backup(domainImages):
 
         except Exception as e:
             exceptions.append(
-                (False, "Error creating snapshot or backup for domain: " + domainImages[0].domain +". Exception: " + repr(e)))
+                (False, "Error creating snapshot or backup for domain: " + domainImages[0].domain + ". Exception: " + repr(e)))
             raise
         finally:
             storage_conn.close()

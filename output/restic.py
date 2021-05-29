@@ -1,3 +1,4 @@
+"""restic output module interfacing with https://github.com/restic/restic"""
 import subprocess
 
 CHUNK_SIZE = 4194304  # 4MB chunks
@@ -6,13 +7,16 @@ CHUNK_SIZE = 4194304  # 4MB chunks
 
 
 class BackupException(Exception):
+    """Exception raised when the backup process experiences a I/O or execution error"""
     pass
 
 
 def backup(target_repo, keyfile, src, filename="stdin", progress=False):
+    """Provide the backup module functionality.
+    A subprocess is spawned and passed the data from src (Ceph connection with open image).
+    Data is passed through a stdin pipe, the return code is evaluated to check for errors"""
+
     # TODO add tagging?
-    # Omit timestamp since restic backend does timestamp with snapshots
-    # Consistent filenames should improve deduplication
     process = subprocess.Popen(("restic", "-p", keyfile, "-r", target_repo, "backup", "--stdin", "--stdin-filename", filename),
                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
 

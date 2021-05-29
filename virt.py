@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-import sys
+"""virt module providing a connection to libvirt hypervisor management"""
+
 from xml.etree import ElementTree
 from dataclasses import dataclass
-
-# Pydantic dataclasses implementation
-# provides type validation at runtime
-#from pydantic.dataclasses import dataclass
 
 import libvirt
 
 
 class LibvirtConnectionException(Exception):
+    """Exception raised when methods are called on a closed connection."""
     pass
 
 
@@ -32,13 +30,12 @@ class VirtConnection:
     conn: libvirt.virConnect = None
 
     def open(self):
-        try:
-            self.conn = libvirt.open(self.connection_string)
-        except libvirt.libvirtError as e:
-            print(repr(e), file=sys.stderr)
-            sys.exit(1)
+        """Open the hypervisor management connection"""
+        self.conn = libvirt.open(self.connection_string)
 
     def close(self):
+        """Close the hypervisor management connection, marking the connection
+        as closed using None"""
         if self.conn != None:
             self.conn.close()
             self.conn = None
@@ -52,6 +49,9 @@ class VirtConnection:
         return getattr(self.conn, attr)
 
     def list_virtrbd_images(self):
+        """Main function listing defined virtual machines and their relevant RBD images
+        with location (pool) and authentication information.
+        Data is recorded and returned in an array of VirtRBDImage instances."""
         images_list = []
         domains = self.listAllDomains(0)
         for dom in domains:
