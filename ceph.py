@@ -52,7 +52,7 @@ class CephConnection:
         self.close_cluster()
 
     def connect(self):
-        #print("Connecting to Ceph monitors: {}".format(
+        # print("Connecting to Ceph monitors: {}".format(
         #    str(self.cluster.conf_get('mon host'))))
         self.cluster.connect()
         self.cluster.require_state("connected")

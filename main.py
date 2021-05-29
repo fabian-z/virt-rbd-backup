@@ -21,6 +21,7 @@ TARGET_KEYFILE = "/path/to/keyfile"
 
 def worker(input, output):
     for image in iter(input.get, None):
+        print(f"Processing {image.name} for domain {image.domain}")
         result = process_backup(image)
         output.put(result)
 
@@ -34,7 +35,6 @@ def run_parallel():
     try:
         images = virt_conn.list_virtrbd_images()
     finally:
-        print("Closing libvirt connection")
         virt_conn.close()
 
     # Create queues
@@ -72,7 +72,6 @@ def process_backup(image):
     try:
         virt_conn.open()
         domain = virt_conn.lookupByUUIDString(image.domain)
-        print(f"Prccessing {domain.name()} - image {image.name}")
         # freeze = image.domain.isActive()
         freeze = False
         frozen = False
@@ -122,7 +121,6 @@ def process_backup(image):
             (False, "Error during libvirt connection: " + repr(e)))
 
     finally:
-        print("Closing libvirt connection")
         virt_conn.close()
 
     if len(exceptions) == 0:

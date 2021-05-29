@@ -54,7 +54,6 @@ class VirtConnection:
         images_list = []
         domains = self.listAllDomains(0)
         for dom in domains:
-            print("Processing domain: "+dom.name())
             # TODO add locking?
             raw_xml = dom.XMLDesc(0)
             tree = ElementTree.fromstring(raw_xml)
