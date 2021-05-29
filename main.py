@@ -55,7 +55,11 @@ def run_parallel():
     # Get and print results
     print('Unordered results:')
     for _ in range(len(images)):
-        print('\n', done_queue.get())
+        (result, text) = done_queue.get()
+        if result:
+            print(f"Backup successful: {text}")
+        else:
+            print(f"Backup failed: {text}")
 
     # Tell child processes to stop
     for _ in range(NUMBER_OF_PROCESSES):
@@ -122,7 +126,7 @@ def process_backup(image):
         virt_conn.close()
 
     if len(exceptions) == 0:
-        return (True, "No error occured")
+        return (True, f"No error occured for image {image.name}")
     else:
         # Only give first exception for now
         return exceptions[0]

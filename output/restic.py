@@ -39,9 +39,8 @@ def backup(target_repo, keyfile, src, filename="stdin", progress=False):
             break
 
     process.stdin.close()
-
     return_code = process.wait()
+    
     if return_code != 0:
-        raise BackupException("Backup error, see log")
-    else:
-        print("Backup successful")
+        raise BackupException(f"Backup error for repository {target_repo}, image {filename} - see log")
+    
