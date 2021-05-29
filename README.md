@@ -1,5 +1,7 @@
 # virt-rbd-backup
 
+[![CodeFactor](https://www.codefactor.io/repository/github/fabian-z/virt-rbd-backup/badge)](https://www.codefactor.io/repository/github/fabian-z/virt-rbd-backup)
+
 Automatic backup of RBD images accessed by virtual machines run by QEMU and managed by libvirt
 
 Uses libvirt Python API and Ceph librbd RBD Python API to list relevant virtual machines, create a RBD snapshot and save the snapshot to defined output.
