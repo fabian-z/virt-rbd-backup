@@ -46,7 +46,6 @@ class VirtConnection:
         """___getattr__ is called when the method or attribute does not exist in this class,
         redirecting to the embbeded conn. It is used to present VirtConnection as a superset
         of libvirt.virConnect"""
-        print(attr)
         if self.conn == None:
             raise LibvirtConnectionException("invalid connection")
         return getattr(self.conn, attr)

@@ -94,7 +94,7 @@ def process_backup(image):
                 image.name, snapshot=snapshot_name, read_only=True)
 
             restic.backup(TARGET_REPO, TARGET_KEYFILE, storage_conn.image,
-                          filename=image.name, progress=True)
+                          filename=image.name+".img", progress=True)
 
             storage_conn.close_image()
             storage_conn.open_image(image.name)
