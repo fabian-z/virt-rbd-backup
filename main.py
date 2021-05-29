@@ -72,7 +72,7 @@ def process_backup(image):
     try:
         virt_conn.open()
         domain = virt_conn.lookupByUUIDString(image.domain)
-        print(domain.name())
+        print(f"Prccessing {domain.name()} - image {image.name}")
         # freeze = image.domain.isActive()
         freeze = False
         frozen = False

@@ -52,11 +52,11 @@ class CephConnection:
         self.close_cluster()
 
     def connect(self):
-        print("Connecting to Ceph monitors: {}".format(
-            str(self.cluster.conf_get('mon host'))))
+        #print("Connecting to Ceph monitors: {}".format(
+        #    str(self.cluster.conf_get('mon host'))))
         self.cluster.connect()
         self.cluster.require_state("connected")
-        print("Connected to Ceph Cluster ID: {}".format(self.cluster.get_fsid()))
+        #print("Connected to Ceph Cluster ID: {}".format(self.cluster.get_fsid()))
 
     # Helper functions to establish state
     def require_cluster_connection(self):
