@@ -79,8 +79,7 @@ def process_backup(domain_images):
     try:
         virt_conn.open()
         domain = virt_conn.lookupByUUIDString(domain_images[0].domain)
-        # freeze = image.domain.isActive()
-        freeze = False
+        freeze = domain.isActive()
         frozen = False
         if freeze:
             try:
