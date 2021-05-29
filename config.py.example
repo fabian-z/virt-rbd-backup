@@ -3,6 +3,8 @@
 # for restic deduplication and compression
 NUMBER_OF_PROCESSES = 4
 
+LIBVIRT_CONNECTION = "qemu:///system"
+
 # TODO configuration with multiple backends?
 # => Restic backend only for now
 TARGET_REPO = "/path/to/repository"

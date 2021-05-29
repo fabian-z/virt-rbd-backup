@@ -9,7 +9,7 @@ import multiprocessing
 import virt
 import ceph
 import output.restic as restic
-from config import NUMBER_OF_PROCESSES, TARGET_REPO, TARGET_KEYFILE
+from config import NUMBER_OF_PROCESSES, LIBVIRT_CONNECTION, TARGET_REPO, TARGET_KEYFILE
 
 # Function run by worker processes
 def worker(input, output):
@@ -20,7 +20,7 @@ def worker(input, output):
 
 # List images and start parallel backup operations
 def run_parallel():
-    virt_conn = virt.VirtConnection("qemu:///system")
+    virt_conn = virt.VirtConnection(LIBVIRT_CONNECTION)
     virt_conn.open()
     images = []
     try:
@@ -44,7 +44,6 @@ def run_parallel():
             task_queue, done_queue)).start()
 
     # Get and print results
-    print('Unordered results:')
     for _ in range(len(images)):
         (result, text) = done_queue.get()
         if result:
@@ -59,7 +58,7 @@ def run_parallel():
 
 def process_backup(image):
     exceptions = []
-    virt_conn = virt.VirtConnection("qemu:///system")
+    virt_conn = virt.VirtConnection(LIBVIRT_CONNECTION)
     try:
         virt_conn.open()
         domain = virt_conn.lookupByUUIDString(image.domain)
