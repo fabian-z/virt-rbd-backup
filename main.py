@@ -57,7 +57,7 @@ def run_parallel():
             task_queue, done_queue)).start()
 
     # Get and print results
-    for _ in range(len(images)):
+    for _ in range(len(domain_images)):
         (result, text) = done_queue.get()
         if result:
             print(f"Backup successful: {text}")
