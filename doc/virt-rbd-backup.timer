@@ -1,0 +1,11 @@
+[Unit]
+Description=Trigger virt-rbd-backup
+
+[Timer]
+# Triggers backup daily on 3 AM
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Unit=virt-rbd-backup.service
+
+[Install]
+WantedBy=timers.target
