@@ -1,0 +1,7 @@
+[Unit]
+Description=Automated libvirt RBD image backup
+
+[Service]
+User=root
+WorkingDirectory=/opt/virt-rbd-backup
+ExecStart=python3 /opt/virt-rbd-backup/main.py
