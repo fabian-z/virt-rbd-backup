@@ -2,9 +2,9 @@
 
 [![CodeFactor](https://www.codefactor.io/repository/github/fabian-z/virt-rbd-backup/badge)](https://www.codefactor.io/repository/github/fabian-z/virt-rbd-backup)
 
-Automatic backup of RBD images accessed by virtual machines run by QEMU and managed by libvirt
+virt-rbd-backup makes automatic backups of virtual machines that are managed with libvirt (Hypervisor QEMU) and stored using Ceph RBD images.
 
-Uses libvirt Python API and Ceph librbd RBD Python API to list relevant virtual machines, create a RBD snapshot and save the snapshot to defined output.
+Python APIs from libvirt and Ceph are used to list the relevant virtual machines, create a coordinated RBD snapshot and save the snapshot to an output module. The snapshot is removed afterwards.
 
 Developed and tested with Python v3.9.
 
@@ -12,15 +12,15 @@ Developed and tested with Python v3.9.
 
 - Dynamic list of relevant libvirt virtual machines
 - Create / Process / Delete RBD snapshots
-- Functionality for multiple RBD images per virtual machine
-- Modular output in file or external processes (e.g. restic backup)
-- If supported by guest operating system: Pause FS activity during snapshot (via QEMU guest agent)
+- Support multiple RBD images per VM
+- Output modules for external applications or backup targets (e.g. restic backup)
+- If supported by guest operating system: Pause FS activity during snapshot (using libvirt API and QEMU guest agent)
 
 # Out of scope
 
 - Implementation of backup management
 - Scheduling / Automation (external via systemd timer or cron)
-- Cluster configuration or management
+- Ceph cluster configuration or management
 
 # References
 
