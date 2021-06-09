@@ -22,6 +22,10 @@ Developed and tested with Python v3.9.
 - Scheduling / Automation (external via systemd timer or cron)
 - Ceph cluster configuration or management
 
+# Architecture
+
+![Architecture diagram](./doc/dataflow-dark.svg)
+
 # References
 
 [libvirt Python development guide](https://libvirt.org/docs/libvirt-appdev-guide-python/en-US/html/)
