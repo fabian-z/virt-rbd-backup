@@ -26,7 +26,6 @@ def worker(input_queue, output_queue):
 
 # List images and start parallel backup operations
 
-
 def run_parallel():
     """List images and start parallel backup operations with worker pool"""
     virt_conn = virt.VirtConnection(LIBVIRT_CONNECTION)
@@ -80,19 +79,21 @@ def process_backup(domain_images):
         virt_conn.open()
         domain = virt_conn.lookupByUUIDString(domain_images[0].domain)
         freeze = domain.isActive()
-        frozen = False
-        if freeze:
-            try:
-                domain.fsFreeze()
-                frozen = True
-            except Exception as ex:
-                print("Error freezing guest FS - continue with hot snapshot: ", repr(ex))
-                frozen = False
+        frozen = False # unreliable? try thawing anyway & only use for error logging
 
         try:
             storage_conn = ceph.CephConnection(
                 domain_images[0].username, domain_images[0].secret)
             storage_conn.connect()
+
+            if freeze:
+                try:
+                    print(f"Freezing guest FS for {domain_images[0].domain}")
+                    domain.fsFreeze()
+                    frozen = True
+                except Exception as ex:
+                    print(f"Error freezing guest FS for {domain_images[0].domain} - continue with snapshot: ", repr(ex))
+                    frozen = False
 
             # First pass: Create backup snapshosts
             for image in domain_images:
@@ -106,7 +107,32 @@ def process_backup(domain_images):
                 storage_conn.close_image()
                 storage_conn.close_pool()
 
-            # Second pass: Copy snapshot content to backup module
+        except Exception as ex:
+            exceptions.append(
+                (False, "Error creating snapshot for domain:" +
+                 f" {domain_images[0].domain}. Exception: {repr(ex)}"))
+            raise
+        finally:
+            storage_conn.close()
+            if freeze:
+                try:
+                    print(f"Thawing guest FS for {domain_images[0].domain}")
+                    domain.fsThaw()
+                except Exception as ex:
+                    if frozen:
+                        exceptions.append(
+                            (False, f"Error thawing guest FS for {domain_images[0].domain} - guest may be unresponsive: " + repr(ex)))
+                        raise
+                    else:
+                        print(f"Could not thaw guest FS for {domain_images[0].domain} which reported freeze error - treating as non-critical")
+        
+        # Second pass: Copy snapshot content to backup module
+
+        try:
+            storage_conn = ceph.CephConnection(
+                domain_images[0].username, domain_images[0].secret)
+            storage_conn.connect()
+
             for image in domain_images:
                 storage_conn.open_pool(image.pool)
                 storage_conn.open_image(
@@ -124,21 +150,17 @@ def process_backup(domain_images):
 
         except Exception as ex:
             exceptions.append(
-                (False, "Error creating snapshot or backup for domain:" +
+                (False, "Error during backup copy for domain:" +
                  f" {domain_images[0].domain}. Exception: {repr(ex)}"))
             raise
         finally:
+            # TODO: Clean snapshots on exception in this pass!
             storage_conn.close()
-            if frozen:
-                try:
-                    domain.fsThaw()
-                except Exception as ex:
-                    exceptions.append(
-                        (False, "Error thawing guest FS - guest may be unresponsive: " + repr(ex)))
-                    raise
+
     except Exception as ex:
         exceptions.append(
-            (False, "Error during libvirt connection: " + repr(ex)))
+                (False, "Error during libvirt connection or operation for domain:" +
+                 f" {domain_images[0].domain}. Exception: {repr(ex)}"))
 
     finally:
         virt_conn.close()
