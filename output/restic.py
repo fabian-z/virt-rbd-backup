@@ -17,7 +17,7 @@ def backup(target_repo, keyfile, src, filename="stdin", progress=False):
     Data is passed through a stdin pipe, the return code is evaluated to check for errors"""
 
     # TODO add tagging?
-    process = subprocess.Popen(("restic", "-p", keyfile, "-r", target_repo, "backup", "--stdin", "--stdin-filename", filename),
+    process = subprocess.Popen(("restic", "--no-cache", "-p", keyfile, "-r", target_repo, "backup", "--stdin", "--stdin-filename", filename),
                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
 
     # TODO could be refactored to I/O wrapper class
