@@ -78,22 +78,11 @@ def process_backup(domain_images):
     try:
         virt_conn.open()
         domain = virt_conn.lookupByUUIDString(domain_images[0].domain)
-        freeze = domain.isActive()
-        frozen = False # unreliable? try thawing anyway & only use for error logging
-
+       
         try:
             storage_conn = ceph.CephConnection(
                 domain_images[0].username, domain_images[0].secret)
             storage_conn.connect()
-
-            if freeze:
-                try:
-                    print(f"Freezing guest FS for {domain_images[0].domain}")
-                    domain.fsFreeze()
-                    frozen = True
-                except Exception as ex:
-                    print(f"Error freezing guest FS for {domain_images[0].domain} - continue with snapshot: ", repr(ex))
-                    frozen = False
 
             # First pass: Create backup snapshosts
             for image in domain_images:
@@ -114,18 +103,7 @@ def process_backup(domain_images):
             raise
         finally:
             storage_conn.close()
-            if freeze:
-                try:
-                    print(f"Thawing guest FS for {domain_images[0].domain}")
-                    domain.fsThaw()
-                except Exception as ex:
-                    if frozen:
-                        exceptions.append(
-                            (False, f"Error thawing guest FS for {domain_images[0].domain} - guest may be unresponsive: " + repr(ex)))
-                        raise
-                    else:
-                        print(f"Could not thaw guest FS for {domain_images[0].domain} which reported freeze error - treating as non-critical")
-        
+            
         # Second pass: Copy snapshot content to backup module
 
         try:
